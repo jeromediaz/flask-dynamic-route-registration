@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flask-dynamic-route-registration"
+version = "0.1.0"
+authors = [
+  { name="Jérôme DIAZ", email="jerome_diaz@me.com" },
+]
+description = "A library to help dynamically register routes in Flask applications."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Framework :: Flask",
+]
+keywords = ["flask", "route", "dynamic"]
+dependencies = [
+    "flask>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["black", "pip-tools", "pytests"]
+
+[project.urls]
+"Homepage" = "https://github.com/jeromediaz/flask-dynamic-route-registration"
+"Bug Tracker" = "https://github.com/jeromediaz/flask-dynamic-route-registration/issues"
