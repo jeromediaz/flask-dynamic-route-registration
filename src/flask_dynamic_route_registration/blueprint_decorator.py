@@ -1,12 +1,14 @@
 import types
-from typing import Optional, Callable, Union, cast, TYPE_CHECKING, Any
+from typing import Optional, Union, cast, TYPE_CHECKING, Any
 from typing_extensions import Protocol
 
 if TYPE_CHECKING:
     from flask import Blueprint
 
+
 class EndpointEnabledCallback(Protocol):
     def __call__(self, **params: Any) -> bool: ...
+
 
 def register_route(rule: str, endpoint: Optional[str] = None, **rule_kwargs):
     """Function to create a decorator to register a route.

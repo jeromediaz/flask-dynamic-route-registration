@@ -8,11 +8,14 @@ from .blueprint_decorator import is_register_route
 if TYPE_CHECKING:
     from flask.app import Flask
 
+
 def register_blueprint(
-    container: Union["Flask", "Blueprint"], module_name: str, blueprints_data: Union[str, Any, List[str | Any]]
+    container: Union["Flask", "Blueprint"],
+    module_name: str,
+    blueprints_data: Union[str, Any, List[str | Any]],
 ):
     """
-    Method to register a blueprint inside `container`
+    Function to register a blueprint inside `container`
 
     Args:
         container (Union["Flask", "Blueprint"]): a flask app object or a parent blueprint to register the new blueprint in
@@ -53,8 +56,12 @@ def register_blueprint(
 
     return new_blueprints
 
+
 def register_blueprints(
-    container: Union["Flask", "Blueprint"], module_prefix: str, blueprints: Mapping[str, Any], **kwargs
+    container: Union["Flask", "Blueprint"],
+    module_prefix: str,
+    blueprints: Mapping[str, Any],
+    **kwargs,
 ):
     """
     Method to register multiple blueprints in `container`
