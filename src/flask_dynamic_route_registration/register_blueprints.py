@@ -13,6 +13,7 @@ def register_blueprint(
     container: Union["Flask", "Blueprint"],
     module_name: str,
     blueprints_data: Union[str, Any, List[str | Any]],
+    route_kwargs: Mapping[str, Any],
 ):
     """
     Function to register a blueprint inside `container`
@@ -47,6 +48,8 @@ def register_blueprint(
         params = blueprint_data.get("params", {})
         module_blueprint = Blueprint(blueprint_name, module_object.__name__)
 
+        params.update(route_kwargs)
+
         for register_route in functions:
             register_route[1](module_blueprint, **params)
 
@@ -61,6 +64,7 @@ def register_blueprints(
     container: Union["Flask", "Blueprint"],
     module_prefix: str,
     blueprints: Mapping[str, Any],
+    route_kwargs: Mapping[str, Any],
     **kwargs,
 ):
     """
@@ -70,6 +74,7 @@ def register_blueprints(
         container (Union["Flask", "Blueprint"]): a flask app object or a parent blueprint to register new blueprints in
         module_prefix: the prefix of the modules that will contain the route to register
         blueprints: configuration mapping
+        route_kwargs: additional options to pass to the container register_blueprint method
         **kwargs: additional options to pass to the container register_blueprint method
 
     Returns:
@@ -81,7 +86,7 @@ def register_blueprints(
     for module, blueprints_data in blueprints.items():
         module_name = f"{module_prefix}.{module}"
 
-        register_blueprint(blueprint_object, module_name, blueprints_data)
+        register_blueprint(blueprint_object, module_name, blueprints_data, route_kwargs=route_kwargs)
 
     container.register_blueprint(blueprint_object, **kwargs)
 
