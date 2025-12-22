@@ -10,7 +10,7 @@ where = ["src"]
 
 [project]
 name = "flask-dynamic-route-registration"
-version = "0.9.0"
+version = "0.9.1"
 authors = [
   { name="Jérôme DIAZ", email="jerome_diaz@me.com" },
 ]
