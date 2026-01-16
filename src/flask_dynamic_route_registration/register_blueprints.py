@@ -86,7 +86,9 @@ def register_blueprints(
     for module, blueprints_data in blueprints.items():
         module_name = f"{module_prefix}.{module}"
 
-        register_blueprint(blueprint_object, module_name, blueprints_data, route_kwargs=route_kwargs)
+        register_blueprint(
+            blueprint_object, module_name, blueprints_data, route_kwargs=route_kwargs
+        )
 
     container.register_blueprint(blueprint_object, **kwargs)
 
