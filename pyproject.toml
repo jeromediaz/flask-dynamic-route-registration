@@ -35,7 +35,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["black", "pip-tools", "pytests"]
+dev = ["black", "pip-tools", "pytest"]
 
 [project.urls]
 "Homepage" = "https://github.com/jeromediaz/flask-dynamic-route-registration"
