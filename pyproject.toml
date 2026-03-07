@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
-"pkgname" = ["py.typed"]
+"flask_dynamic_route_registration" = ["py.typed"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -16,6 +16,8 @@ authors = [
 ]
 description = "A library to help dynamically register routes in Flask applications."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3.8",
@@ -31,12 +33,19 @@ classifiers = [
 keywords = ["flask", "route", "dynamic"]
 dependencies = [
     "flask>=2.0.0",
-    "typing-extensions>=4.12.2"
+    "typing-extensions>=4.0.0",
 ]
 
 [project.optional-dependencies]
-dev = ["black", "pip-tools", "pytest"]
+dev = ["black", "pip-tools", "pytest", "ruff", "mypy"]
 
 [project.urls]
 "Homepage" = "https://github.com/jeromediaz/flask-dynamic-route-registration"
 "Bug Tracker" = "https://github.com/jeromediaz/flask-dynamic-route-registration/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]

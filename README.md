@@ -22,7 +22,7 @@ from flask_dynamic_route_registration import register_blueprint
 
 app = Flask(__name__)
 
-register_blueprint(app, "healthcheck", '')
+register_blueprint(app, "healthcheck", '', {})
 
 app.run()
 ```
@@ -34,7 +34,7 @@ Inside the `healthcheck/__init__.py` file
 from flask import make_response
 from typing import TYPE_CHECKING
 
-from dynamic_route_registration import register_route
+from flask_dynamic_route_registration import register_route
 
 if TYPE_CHECKING:
     from flask import Response
@@ -67,7 +67,7 @@ api_versions = [
     }
 ]
 
-register_blueprint(app, 'api', api_versions)
+register_blueprint(app, 'api', api_versions, {})
 ```
 
 
@@ -79,7 +79,7 @@ Inside the `api/__init__.py` file
 from flask import jsonify
 from typing import TYPE_CHECKING
 
-from dynamic_route_registration import register_route
+from flask_dynamic_route_registration import register_route
 
 if TYPE_CHECKING:
     from flask import Response
@@ -120,6 +120,32 @@ def post_endpoint () -> "Response":
 
 ```
 
+
+### Registering multiple modules at once
+
+`register_blueprints` (plural) registers multiple route modules under a shared parent blueprint:
+
+```python
+from flask import Flask
+from flask_dynamic_route_registration import register_blueprints
+
+app = Flask(__name__)
+
+register_blueprints(
+    app,
+    "myapp.api",
+    {
+        "healthcheck": "",
+        "users": {"blueprint_kwargs": {"url_prefix": "/users"}},
+    },
+    {},
+    url_prefix="/v1",
+)
+
+app.run()
+```
+
+This creates a parent blueprint for `myapp.api`, registers each sub-module (`myapp.api.healthcheck`, `myapp.api.users`) into it, then mounts the parent blueprint on `app`.
 
 ### Limitations
 As for now you can't register multiple routes at the same time for a given function.
