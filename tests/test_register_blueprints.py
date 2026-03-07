@@ -557,6 +557,128 @@ class TestRegisterBlueprintsPlural:
             _cleanup_module(f"{prefix}.views")
             _cleanup_module(prefix)
 
+    def test_register_blueprint_with_parent_blueprint_container(self):
+        """register_blueprint accepts a Blueprint as container (not just Flask app)."""
+
+        @register_route("/sub")
+        def sub():
+            return "sub", 200
+
+        mod_name = "test_rb_bp_container.routes"
+        _make_module(mod_name, sub=sub)
+        try:
+            parent_bp = Blueprint("parent", __name__)
+            register_blueprint(parent_bp, mod_name, "/child", route_kwargs={})
+
+            app = _make_app()
+            app.register_blueprint(parent_bp, url_prefix="/top")
+            assert app.test_client().get("/top/child/sub").status_code == 200
+        finally:
+            _cleanup_module(mod_name)
+
+    def test_route_kwargs_takes_precedence_over_params(self, flask_app):
+        """route_kwargs values override same-key values in params."""
+
+        @register_route("/kw")
+        def kw_view(*, val: str = "default"):
+            return jsonify({"val": val}), 200
+
+        blueprint_data = {
+            "blueprint_kwargs": {"url_prefix": "/kw"},
+            "params": {"val": "from_params"},
+        }
+        mod_name = "test_rb_kw_precedence.routes"
+        _make_module(mod_name, kw_view=kw_view)
+        try:
+            register_blueprint(
+                flask_app, mod_name, blueprint_data, route_kwargs={"val": "from_route_kwargs"}
+            )
+            response = flask_app.test_client().get("/kw/kw")
+            assert response.status_code == 200
+            assert response.get_json()["val"] == "from_route_kwargs"
+        finally:
+            _cleanup_module(mod_name)
+
+    def test_params_not_mutated_across_list_blueprints(self, flask_app):
+        """params dict of first blueprint entry must not bleed into the second."""
+
+        @register_route("/val")
+        def val_view(*, x: int = 0, extra: int = 0):
+            return jsonify({"x": x}), 200
+
+        blueprints_data = [
+            {
+                "blueprint_name": "pm_v1",
+                "blueprint_kwargs": {"url_prefix": "/pm/1"},
+                "params": {"x": 10},
+            },
+            {
+                "blueprint_name": "pm_v2",
+                "blueprint_kwargs": {"url_prefix": "/pm/2"},
+                "params": {"x": 20},
+            },
+        ]
+        mod_name = "test_rb_params_mutation.routes"
+        _make_module(mod_name, val_view=val_view)
+        try:
+            register_blueprint(flask_app, mod_name, blueprints_data, route_kwargs={"extra": 99})
+            client = flask_app.test_client()
+            assert client.get("/pm/1/val").get_json()["x"] == 10
+            assert client.get("/pm/2/val").get_json()["x"] == 20
+            # Original params dicts must not have been mutated by route_kwargs.
+            assert blueprints_data[0]["params"] == {"x": 10}
+            assert blueprints_data[1]["params"] == {"x": 20}
+        finally:
+            _cleanup_module(mod_name)
+
+    def test_register_blueprints_without_url_prefix(self, flask_app):
+        """register_blueprints without url_prefix mounts routes at root."""
+
+        @register_route("/root_route")
+        def root_route():
+            return "root", 200
+
+        prefix = "test_rbs_no_prefix"
+        _make_module(f"{prefix}.views", root_route=root_route)
+        _make_module(prefix)
+        try:
+            register_blueprints(
+                flask_app,
+                prefix,
+                blueprints={"views": "/v"},
+                route_kwargs={},
+            )
+            assert flask_app.test_client().get("/v/root_route").status_code == 200
+        finally:
+            _cleanup_module(f"{prefix}.views")
+            _cleanup_module(prefix)
+
+    def test_register_blueprints_with_parent_blueprint_container(self):
+        """register_blueprints accepts a Blueprint as container."""
+
+        @register_route("/bp_sub")
+        def bp_sub():
+            return "bp_sub", 200
+
+        prefix = "test_rbs_bp_container"
+        _make_module(f"{prefix}.mod", bp_sub=bp_sub)
+        _make_module(prefix)
+        try:
+            parent = Blueprint("outer", __name__)
+            register_blueprints(
+                parent,
+                prefix,
+                blueprints={"mod": "/mod"},
+                route_kwargs={},
+                url_prefix="/inner",
+            )
+            app = _make_app()
+            app.register_blueprint(parent, url_prefix="/top")
+            assert app.test_client().get("/top/inner/mod/bp_sub").status_code == 200
+        finally:
+            _cleanup_module(f"{prefix}.mod")
+            _cleanup_module(prefix)
+
     def test_multiple_routes_in_same_module(self, flask_app):
         """All register_route-decorated functions in a module are registered."""
 

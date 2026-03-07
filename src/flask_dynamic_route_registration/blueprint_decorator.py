@@ -28,7 +28,7 @@ def register_route(rule: str, endpoint: Optional[str] = None, **rule_kwargs):
 
         def wrapper(blueprint: "Blueprint", **params):
             endpoint_enabled = cast(
-                Union[EndpointEnabledCallback | bool], rule_kwargs.pop("enabled", True)
+                Union[EndpointEnabledCallback | bool], rule_kwargs.get("enabled", True)
             )
 
             if callable(endpoint_enabled):
@@ -36,8 +36,9 @@ def register_route(rule: str, endpoint: Optional[str] = None, **rule_kwargs):
                 endpoint_enabled = endpoint_enabled_func(**params)
 
             if endpoint_enabled:
+                route_kw = {k: v for k, v in rule_kwargs.items() if k != "enabled"}
                 blueprint.route(
-                    rule, endpoint=final_endpoint, defaults=params, **rule_kwargs
+                    rule, endpoint=final_endpoint, defaults=params, **route_kw
                 )(func)
 
         wrapper.is_url_rule = True

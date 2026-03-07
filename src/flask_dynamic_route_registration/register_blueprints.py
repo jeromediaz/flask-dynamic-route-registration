@@ -45,10 +45,8 @@ def register_blueprint(
             "blueprint_name", module_object.__name__.split(".")[-1]
         )
         blueprint_kwargs = blueprint_data.get("blueprint_kwargs", {})
-        params = blueprint_data.get("params", {})
+        params = {**blueprint_data.get("params", {}), **route_kwargs}
         module_blueprint = Blueprint(blueprint_name, module_object.__name__)
-
-        params.update(route_kwargs)
 
         for register_route in functions:
             register_route[1](module_blueprint, **params)

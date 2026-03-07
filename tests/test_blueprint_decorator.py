@@ -282,6 +282,53 @@ class TestRegisterRouteEnabled:
 
         assert received_params.get("version") == 99
 
+    def test_enabled_callable_same_wrapper_used_twice(self):
+        """Registering the same wrapper on two blueprints must respect enabled each time."""
+        call_count = [0]
+
+        def toggle(**params):
+            call_count[0] += 1
+            return call_count[0] % 2 == 1  # True for 1st call, False for 2nd
+
+        @register_route("/tog", enabled=toggle)
+        def tog():
+            return "tog", 200
+
+        app = _make_app()
+
+        bp1 = Blueprint("tog_v1", __name__)
+        tog(bp1)
+        app.register_blueprint(bp1, url_prefix="/v1")
+
+        bp2 = Blueprint("tog_v2", __name__)
+        tog(bp2)
+        app.register_blueprint(bp2, url_prefix="/v2")
+
+        client = app.test_client()
+        assert client.get("/v1/tog").status_code == 200
+        assert client.get("/v2/tog").status_code == 404
+
+    def test_enabled_false_same_wrapper_used_twice(self):
+        """enabled=False must prevent registration on both the first and second call."""
+
+        @register_route("/off", enabled=False)
+        def off():
+            return "off", 200
+
+        app = _make_app()
+
+        bp1 = Blueprint("off_v1", __name__)
+        off(bp1)
+        app.register_blueprint(bp1, url_prefix="/v1")
+
+        bp2 = Blueprint("off_v2", __name__)
+        off(bp2)
+        app.register_blueprint(bp2, url_prefix="/v2")
+
+        client = app.test_client()
+        assert client.get("/v1/off").status_code == 404
+        assert client.get("/v2/off").status_code == 404
+
     def test_enabled_callable_version_condition_per_blueprint(self):
         """Realistic scenario: same route enabled for v2 but not v1."""
         from flask import jsonify
