@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0.0", "wheel"]
+requires = ["setuptools>=77.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
@@ -30,8 +30,8 @@ classifiers = [
 ]
 keywords = ["flask", "route", "dynamic"]
 dependencies = [
-    "flask>=2.0.0",
-    "typing-extensions>=4.0.0",
+    "flask>=2.0.0,<4",
+    "typing-extensions>=4.0.0,<5",
 ]
 
 [project.optional-dependencies]
