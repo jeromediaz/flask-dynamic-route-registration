@@ -1,5 +1,6 @@
 import types
-from typing import Optional, Union, cast, TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
+
 from typing_extensions import Protocol
 from werkzeug.routing import Map, Rule
 
@@ -11,7 +12,7 @@ class EndpointEnabledCallback(Protocol):
     def __call__(self, **params: Any) -> bool: ...
 
 
-def register_route(rule: str, endpoint: Optional[str] = None, **rule_kwargs):
+def register_route(rule: str, endpoint: str | None = None, **rule_kwargs):
     """Function to create a decorator to register a route.
 
     Args:
@@ -29,21 +30,16 @@ def register_route(rule: str, endpoint: Optional[str] = None, **rule_kwargs):
 
         def wrapper(blueprint: "Blueprint", **params):
             endpoint_enabled = cast(
-                Union[EndpointEnabledCallback | bool], rule_kwargs.get("enabled", True)
+                EndpointEnabledCallback | bool, rule_kwargs.get("enabled", True)
             )
 
             if callable(endpoint_enabled):
-                endpoint_enabled_func = cast(EndpointEnabledCallback, endpoint_enabled)
-                endpoint_enabled = endpoint_enabled_func(**params)
+                endpoint_enabled = endpoint_enabled(**params)
 
             if not isinstance(endpoint_enabled, bool):
                 raise TypeError(
-                    "enabled gate for endpoint {!r} must return a bool, "
-                    "got {!r} of type {}".format(
-                        final_endpoint,
-                        endpoint_enabled,
-                        type(endpoint_enabled).__name__,
-                    )
+                    f"enabled gate for endpoint {final_endpoint!r} must return a bool, "
+                    f"got {endpoint_enabled!r} of type {type(endpoint_enabled).__name__}"
                 )
 
             if endpoint_enabled:
@@ -57,10 +53,8 @@ def register_route(rule: str, endpoint: Optional[str] = None, **rule_kwargs):
                 colliding_params = sorted(set(params) & url_variables)
                 if colliding_params:
                     raise ValueError(
-                        "params {!r} collide with URL variables in rule {!r}; "
-                        "defaults would override client path values".format(
-                            colliding_params, rule
-                        )
+                        f"params {colliding_params!r} collide with URL variables in rule {rule!r}; "
+                        "defaults would override client path values"
                     )
                 blueprint.route(
                     rule, endpoint=final_endpoint, defaults=params, **route_kw

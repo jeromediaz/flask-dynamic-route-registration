@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Install dependencies
+# Install dependencies (tools are pinned in the dev extra)
 pip install -e ".[dev]"
 
 # Run tests
@@ -14,9 +14,13 @@ pytest tests/
 # Run a single test
 pytest tests/test_blueprint_decorator.py::test_name
 
-# Format
+# Format / lint / type-check (same commands as CI)
 black src/ tests/
+ruff check src/ tests/          # ruff check --fix for auto-fixables
+mypy src/flask_dynamic_route_registration
 ```
+
+Release: bump `version` in `pyproject.toml` in its own commit, tag it `vX.Y.Z`, push branch + tag. CI builds and publishes the tag to PyPI via Trusted Publishing (no API token). `__version__` derives from the installed distribution metadata — never edit it.
 
 ## Architecture
 

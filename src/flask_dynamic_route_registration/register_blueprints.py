@@ -1,5 +1,6 @@
+from collections.abc import Mapping
 from inspect import getmembers
-from typing import Mapping, Any, TYPE_CHECKING, Union, List
+from typing import TYPE_CHECKING, Any, Union
 
 from flask import Blueprint
 
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 def register_blueprint(
     container: Union["Flask", "Blueprint"],
     module_name: str,
-    blueprints_data: Union[str, Any, List[str | Any]],
+    blueprints_data: str | Any | list[str | Any],
     route_kwargs: Mapping[str, Any],
 ):
     """
@@ -35,7 +36,7 @@ def register_blueprint(
     if not isinstance(blueprints_data, list):
         blueprints_data = [blueprints_data]
 
-    new_blueprints: List[Blueprint] = []
+    new_blueprints: list[Blueprint] = []
 
     for blueprint_data in blueprints_data:
         if isinstance(blueprint_data, str):
@@ -90,7 +91,9 @@ def register_blueprints(
         if not getmembers(module_object, is_register_route):
             continue
 
-        entries = blueprints_data if isinstance(blueprints_data, list) else [blueprints_data]
+        entries = (
+            blueprints_data if isinstance(blueprints_data, list) else [blueprints_data]
+        )
         for entry in entries:
             if isinstance(entry, str):
                 entry = {"blueprint_kwargs": {"url_prefix": entry}}

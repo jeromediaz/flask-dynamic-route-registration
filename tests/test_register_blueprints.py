@@ -19,15 +19,15 @@ Strategy for module injection:
 
 import sys
 import types
+
 import pytest
-from flask import Flask, Blueprint, jsonify
+from flask import Blueprint, Flask, jsonify
 
 from flask_dynamic_route_registration.blueprint_decorator import register_route
 from flask_dynamic_route_registration.register_blueprints import (
     register_blueprint,
     register_blueprints,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -591,7 +591,10 @@ class TestRegisterBlueprintsPlural:
         _make_module(mod_name, kw_view=kw_view)
         try:
             register_blueprint(
-                flask_app, mod_name, blueprint_data, route_kwargs={"val": "from_route_kwargs"}
+                flask_app,
+                mod_name,
+                blueprint_data,
+                route_kwargs={"val": "from_route_kwargs"},
             )
             response = flask_app.test_client().get("/kw/kw")
             assert response.status_code == 200
@@ -621,7 +624,9 @@ class TestRegisterBlueprintsPlural:
         mod_name = "test_rb_params_mutation.routes"
         _make_module(mod_name, val_view=val_view)
         try:
-            register_blueprint(flask_app, mod_name, blueprints_data, route_kwargs={"extra": 99})
+            register_blueprint(
+                flask_app, mod_name, blueprints_data, route_kwargs={"extra": 99}
+            )
             client = flask_app.test_client()
             assert client.get("/pm/1/val").get_json()["x"] == 10
             assert client.get("/pm/2/val").get_json()["x"] == 20
@@ -720,7 +725,9 @@ class TestRegisterBlueprintsPlural:
             _cleanup_module(f"{prefix}.views")
             _cleanup_module(prefix)
 
-    def test_duplicate_names_across_modules_raise_before_partial_registration(self, flask_app):
+    def test_duplicate_names_across_modules_raise_before_partial_registration(
+        self, flask_app
+    ):
         """Collision across two modules (same last segment) must not mount the first child."""
 
         @register_route("/a")

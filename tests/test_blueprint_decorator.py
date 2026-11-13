@@ -11,13 +11,12 @@ Covers:
 import types
 
 import pytest
-from flask import Flask, Blueprint
+from flask import Blueprint, Flask
 
 from flask_dynamic_route_registration.blueprint_decorator import (
-    register_route,
     is_register_route,
+    register_route,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
