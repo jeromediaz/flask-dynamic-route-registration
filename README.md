@@ -147,6 +147,21 @@ app.run()
 
 This creates a parent blueprint for `myapp.api`, registers each sub-module (`myapp.api.healthcheck`, `myapp.api.users`) into it, then mounts the parent blueprint on `app`.
 
+### Strict configuration errors
+
+Since 0.10.0, bad configuration fails loudly at registration instead of
+behaving silently:
+
+- `enabled` must be a `bool` or a callable returning a `bool`. A value like
+  the string `"false"` raises `TypeError` rather than enabling the route by
+  truthiness.
+- A `params` or `route_kwargs` key that collides with a URL variable of the
+  rule (e.g. `version` in `/foo/<subject>` with `params={"subject": ...}`)
+  raises `ValueError`: route defaults would silently pin the variable.
+- `register_blueprints` checks blueprint-name uniqueness across all entries
+  before touching the app; a duplicate raises `ValueError` and leaves the
+  app unchanged.
+
 ### Limitations
 As for now you can't register multiple routes at the same time for a given function.
 
