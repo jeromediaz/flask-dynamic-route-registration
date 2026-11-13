@@ -47,4 +47,14 @@ register_blueprint(container, module_name, blueprints_data, route_kwargs)
 
 ### `enabled` parameter
 
-`@register_route` accepts `enabled=True|False|callable`. If callable, it receives `**params` and must return bool — allowing routes to be conditionally registered per blueprint instance.
+`@register_route` accepts `enabled=True|False|callable`. If callable, it receives `**params` and must return bool — allowing routes to be conditionally registered per blueprint instance. The bool contract is enforced at registration: a gate result (or a literal `enabled` value) that is not a `bool` raises `TypeError` before anything is registered. Truthy non-bools like `'false'` no longer silently register a route.
+
+### Registration validation (fails fast, no partial state)
+
+- **params vs URL variables**: a `params`/`route_kwargs` key named identically to a URL variable in the rule (e.g. `subject` with rule `/foo/<subject>`) raises `ValueError` at registration — Flask route `defaults` would silently override the client's path value.
+- **name-uniqueness pre-pass in `register_blueprints`**: effective blueprint names (default = module's last dot-segment) are validated across all entries of all modules before the container is touched; duplicates raise `ValueError` telling you to set `blueprint_name`. A failed plural registration leaves the container byte-identical to its pre-call state.
+- `register_blueprint` called directly with colliding list entries still fails via Flask's own duplicate-name `ValueError`, which can leave earlier children registered — prefer `register_blueprints` for the atomic behavior.
+
+### Gotcha: params become view kwargs
+
+All `params` (merged `blueprint_data["params"]` + `route_kwargs`) are passed as Flask `defaults`, so every params key must be accepted by each registered view function — a view that doesn't take the key raises `TypeError` per request. Views consuming config params should accept `**kwargs` or declare the keys.

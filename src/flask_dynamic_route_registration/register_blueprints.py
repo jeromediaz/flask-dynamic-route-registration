@@ -79,6 +79,32 @@ def register_blueprints(
         Blueprint: the new blueprint
 
     """
+    # Pre-validate blueprint names so a collision fails before mutating `container`.
+    # Without this, container.register_blueprint raises ValueError after earlier
+    # children already merged into the container, leaving a partial URL surface.
+    seen_names = set()
+    duplicate_names = []
+    for module, blueprints_data in blueprints.items():
+        module_name = f"{module_prefix}.{module}"
+        module_object = __import__(module_name, fromlist=[""])
+        if not getmembers(module_object, is_register_route):
+            continue
+
+        entries = blueprints_data if isinstance(blueprints_data, list) else [blueprints_data]
+        for entry in entries:
+            if isinstance(entry, str):
+                entry = {"blueprint_kwargs": {"url_prefix": entry}}
+            name = entry.get("blueprint_name", module_name.split(".")[-1])
+            if name in seen_names and name not in duplicate_names:
+                duplicate_names.append(name)
+            seen_names.add(name)
+    if duplicate_names:
+        raise ValueError(
+            "Duplicate blueprint name(s): "
+            + ", ".join(repr(name) for name in duplicate_names)
+            + ". Set blueprint_name in the blueprint configuration to make each name unique."
+        )
+
     blueprint_object = Blueprint(module_prefix.replace(".", "_"), __name__, **kwargs)
 
     for module, blueprints_data in blueprints.items():

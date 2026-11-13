@@ -679,6 +679,127 @@ class TestRegisterBlueprintsPlural:
             _cleanup_module(f"{prefix}.mod")
             _cleanup_module(prefix)
 
+    def test_duplicate_default_names_raise_before_partial_registration(self, flask_app):
+        """Two entries whose default names collide must raise with no partial registration."""
+
+        @register_route("/dup")
+        def dup():
+            return "dup", 200
+
+        prefix = "test_rbs_dup_names"
+        _make_module(f"{prefix}.views", dup=dup)
+        _make_module(prefix)
+        try:
+            # Both entries default to the module's last segment: "views".
+            blueprints_data = [
+                {"blueprint_kwargs": {"url_prefix": "/one"}},
+                {"blueprint_kwargs": {"url_prefix": "/two"}},
+            ]
+            before_map = sorted(
+                (rule.rule, sorted(rule.methods or ()))
+                for rule in flask_app.url_map.iter_rules()
+            )
+            before_blueprints = dict(flask_app.blueprints)
+
+            with pytest.raises(ValueError) as excinfo:
+                register_blueprints(
+                    flask_app,
+                    prefix,
+                    blueprints={"views": blueprints_data},
+                    route_kwargs={},
+                )
+            assert "views" in str(excinfo.value)
+
+            after_map = sorted(
+                (rule.rule, sorted(rule.methods or ()))
+                for rule in flask_app.url_map.iter_rules()
+            )
+            assert after_map == before_map
+            assert flask_app.blueprints == before_blueprints
+        finally:
+            _cleanup_module(f"{prefix}.views")
+            _cleanup_module(prefix)
+
+    def test_duplicate_names_across_modules_raise_before_partial_registration(self, flask_app):
+        """Collision across two modules (same last segment) must not mount the first child."""
+
+        @register_route("/a")
+        def a_view():
+            return "a", 200
+
+        @register_route("/b")
+        def b_view():
+            return "b", 200
+
+        # Two different modules whose last segments are identical.
+        prefix = "test_rbs_dup_xmod"
+        _make_module(f"{prefix}.pkg_a", a_view=a_view)
+        _make_module(f"{prefix}.pkg_a.views", a_view=a_view)
+        _make_module(f"{prefix}.pkg_b.views", b_view=b_view)
+        _make_module(prefix)
+        try:
+            before_map = sorted(
+                (rule.rule, sorted(rule.methods or ()))
+                for rule in flask_app.url_map.iter_rules()
+            )
+            before_blueprints = dict(flask_app.blueprints)
+
+            with pytest.raises(ValueError) as excinfo:
+                register_blueprints(
+                    flask_app,
+                    prefix,
+                    blueprints={"pkg_a.views": "/a", "pkg_b.views": "/b"},
+                    route_kwargs={},
+                )
+            assert "views" in str(excinfo.value)
+
+            after_map = sorted(
+                (rule.rule, sorted(rule.methods or ()))
+                for rule in flask_app.url_map.iter_rules()
+            )
+            assert after_map == before_map
+            assert flask_app.blueprints == before_blueprints
+        finally:
+            _cleanup_module(f"{prefix}.pkg_a.views")
+            _cleanup_module(f"{prefix}.pkg_b.views")
+            _cleanup_module(f"{prefix}.pkg_a")
+            _cleanup_module(prefix)
+
+    def test_distinct_blueprint_names_register_both(self, flask_app):
+        """Entries with distinct explicit blueprint_name values still register."""
+
+        @register_route("/ok")
+        def ok():
+            return "ok", 200
+
+        prefix = "test_rbs_distinct_names"
+        _make_module(f"{prefix}.views", ok=ok)
+        _make_module(prefix)
+        try:
+            register_blueprints(
+                flask_app,
+                prefix,
+                blueprints={
+                    "views": [
+                        {
+                            "blueprint_name": "views_v1",
+                            "blueprint_kwargs": {"url_prefix": "/v1"},
+                        },
+                        {
+                            "blueprint_name": "views_v2",
+                            "blueprint_kwargs": {"url_prefix": "/v2"},
+                        },
+                    ]
+                },
+                route_kwargs={},
+            )
+            client = flask_app.test_client()
+            assert client.get("/v1/ok").status_code == 200
+            assert client.get("/v2/ok").status_code == 200
+        finally:
+            _cleanup_module(f"{prefix}.views")
+            _cleanup_module(prefix)
+
     def test_multiple_routes_in_same_module(self, flask_app):
         """All register_route-decorated functions in a module are registered."""
 

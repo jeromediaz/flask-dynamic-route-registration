@@ -9,6 +9,8 @@ Covers:
 """
 
 import types
+
+import pytest
 from flask import Flask, Blueprint
 
 from flask_dynamic_route_registration.blueprint_decorator import (
@@ -209,6 +211,51 @@ class TestRegisterRouteFlaskIntegration:
 
 
 # ---------------------------------------------------------------------------
+# Tests: params must not collide with URL variables
+# ---------------------------------------------------------------------------
+
+
+class TestParamsUrlVariableCollision:
+    """Params passed as Flask defaults must not pin a URL variable in the rule."""
+
+    def _bp_client(self, bp: Blueprint):
+        app = _make_app()
+        app.register_blueprint(bp)
+        return app.test_client()
+
+    def test_colliding_params_key_raises_value_error(self):
+        """A params key named like a URL variable must raise ValueError naming it."""
+
+        @register_route("/greet/<subject>")
+        def greet(subject: str = "default"):
+            return f"hello {subject}", 200
+
+        bp = Blueprint("params_collide", __name__)
+        with pytest.raises(ValueError) as excinfo:
+            greet(bp, subject="pinned")
+        assert "subject" in str(excinfo.value)
+        # No route may be registered on failure.
+        assert self._bp_client(bp).get("/greet/world").status_code == 404
+
+    def test_client_path_value_survives_without_collision(self):
+        """Without collision, the real path segment must reach the view."""
+
+        @register_route("/greet/<subject>")
+        def greet(subject: str):
+            return f"hello {subject}", 200
+
+        bp = Blueprint("params_no_collide", __name__)
+        greet(bp)
+
+        # Non-colliding params arriving as defaults is covered by
+        # test_params_are_passed_as_defaults; here only the client value matters.
+        client = self._bp_client(bp)
+        response = client.get("/greet/world")
+        assert response.status_code == 200
+        assert b"hello world" in response.data
+
+
+# ---------------------------------------------------------------------------
 # Tests: enabled flag
 # ---------------------------------------------------------------------------
 
@@ -328,6 +375,30 @@ class TestRegisterRouteEnabled:
         client = app.test_client()
         assert client.get("/v1/off").status_code == 404
         assert client.get("/v2/off").status_code == 404
+
+    def test_enabled_truthy_string_raises_type_error(self):
+        """enabled='false' must raise TypeError and leave the route absent."""
+
+        @register_route("/str_gate", enabled="false")
+        def str_gate():
+            return "gate", 200
+
+        bp = Blueprint("enabled_str", __name__)
+        with pytest.raises(TypeError):
+            str_gate(bp)
+        assert self._bp_client(bp).get("/str_gate").status_code == 404
+
+    def test_enabled_callable_returning_non_bool_raises_type_error(self):
+        """A callable enabled returning a truthy non-bool must raise TypeError."""
+
+        @register_route("/non_bool", enabled=lambda **params: "no")
+        def non_bool():
+            return "gate", 200
+
+        bp = Blueprint("enabled_non_bool", __name__)
+        with pytest.raises(TypeError):
+            non_bool(bp)
+        assert self._bp_client(bp).get("/non_bool").status_code == 404
 
     def test_enabled_callable_version_condition_per_blueprint(self):
         """Realistic scenario: same route enabled for v2 but not v1."""
