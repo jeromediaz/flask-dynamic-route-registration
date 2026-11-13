@@ -1,27 +1,28 @@
 # Mirrors the CI "test" job so a broken release never reaches GitHub.
-# Needs the dev tools on PATH (pip install -e ".[dev]"), then once: lefthook install
+# Uses the repo's .venv explicitly so hooks work without activating it.
+# Needs the dev tools installed once: uv venv && uv pip install -e ".[dev]"
 pre-commit:
   parallel: false
   commands:
     black:
       glob: "*.py"
-      run: python -m black --check {staged_files}
+      run: .venv/bin/python -m black --check {staged_files}
     ruff:
       glob: "*.py"
-      run: python -m ruff check {staged_files}
+      run: .venv/bin/python -m ruff check {staged_files}
     mypy:
       # Whole package, not {staged_files}: a change here can break types elsewhere.
       glob: "*.py"
-      run: python -m mypy src/flask_dynamic_route_registration
+      run: .venv/bin/python -m mypy src/flask_dynamic_route_registration
 
 pre-push:
   parallel: false
   commands:
     pytest:
-      run: python -m pytest -q
+      run: .venv/bin/python -m pytest -q
     black:
-      run: python -m black --check src/ tests/
+      run: .venv/bin/python -m black --check src/ tests/
     ruff:
-      run: python -m ruff check src/ tests/
+      run: .venv/bin/python -m ruff check src/ tests/
     mypy:
-      run: python -m mypy src/flask_dynamic_route_registration
+      run: .venv/bin/python -m mypy src/flask_dynamic_route_registration
